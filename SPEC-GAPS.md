@@ -66,3 +66,19 @@ current behaviour or implements the proposed fix.
 45. **§A7, lookup and failure texts.** Go's `os/exec` texts (`exec: exec: "x": executable file not found in $PATH`, `stat ./x: no such file or directory`, `cannot run executable found relative to current directory`); clipboard command failures `clipboard command: <argv0>: exit status 4`, timeouts `…: signal: killed`. Reproduced; a non-Go implementation must emulate them.
 46. **Audit #1** (sleep stops the TUI idle and clipboard timers): fix implemented in the clipboard wait (deadline checked by wall clock and monotonic clock). **#27** (no OSC 52 size limit) and **#41** (bare `EOF`): current behaviour kept.
 47. **Reference bug found:** `passh-go recover` panics (Go stack trace, exit 2) on a 65535-byte line followed by a blank line at the `> ` prompt. passh-ts reports `input longer than …`.
+
+## Printing and the print page (print.md)
+
+48. **print.md §5, line widths of the recovery commands — documentation bug.** It says only the two `tr … | awk …` lines exceed 80 columns, but the third command with its comment is 87 columns (in the reference too). Actual behaviour kept.
+49. **print.md §2.4, notes that are only white space.** Left out of the sheet (reference behaviour, verified); the spec should say so.
+50. **print.md §6.7, a stop while the page is being written.** Unspecified what the TTL, Esc or a cancellation does mid-response. Decided: result "cancelled" with the client named; a 30 s write wait running out → "failed" with `(i/o timeout)`.
+51. **print.md §6.2, "an address with a zone is refused".** Has no effect on interface addresses (only link-local addresses carry zones, and those are refused anyway). Reference: an interface listed twice in `print_web.interfaces` reports its skipped addresses twice; reproduced, not in the spec.
+52. **print.md §6.3/§6.6, "case-insensitive" host names.** Implemented as Unicode simple folding (Go's `EqualFold`).
+53. **print.md §6.3, order of the certificate's SANs.** Unspecified; reference: DNS names first, then IPs in bind order. Reproduced.
+54. **print.md §6.8–§6.9, QR codes.** The spec says only that the encoder picks the smallest version. The reference (skip2/go-qrcode) also mixes segments (byte, numeric, alphanumeric) and scores masks with its own non-standard penalty. passh-ts reproduces both, so the QR codes are identical; a plain encoder would give different (valid) codes — the spec should say whether byte-identity extends to the QR modules.
+55. **print.md §4.2, `(continued)` copies of a header** aren't re-wrapped (as in the pseudo-code), so they can exceed 80 columns. Reproduced.
+56. **print.md §3.4, "hard-wrapped at 78" for long labels** means chunks of 78 columns each prefixed by 2 blanks (verified on the reference).
+57. **print.md §6.9, keys in the dialog.** Any ESC byte stops the dialog, so an arrow key does too (decided; not checked on the reference).
+58. **HTTP answers before the §6.6 table** (non-normative, but observable): Go's net/http texts reproduced (`400 Bad Request: missing required Host header`, an `HTTP/1.0` status line for 1.0 requests, `OPTIONS *` → 200, Go's 2048-byte chunking). passh-ts has its own small HTTP/1.1 layer to match these.
+59. **Spec §14 Q4 (`allow_from`).** Current behaviour: a non-empty `allow_from` replaces the default ranges; any CIDR accepted, `0.0.0.0/0` included. **Audit #21, #22, #23**: current behaviour kept.
+60. **cli.md §2.17, no terminal.** The text isn't given for `recovery-key print` specifically; the generic `passh <cmd> needs a terminal (over SSH: use \`ssh -t\`)` is used.
