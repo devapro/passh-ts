@@ -16,7 +16,7 @@ Read this first. The specification in `spec/` is the only source of truth: `spec
 - Tests: `bun test src/<module>` (unit tests next to the code as `*.test.ts`), `bun test test/interop` (side-by-side with the reference), `bun test test/cli` (black-box CLI).
 - Run passh from source: `bun run src/main.ts …` (once the CLI exists); compiled: `bun run build:host` → `dist/passh`.
 - PTY for tests: `test/helpers/pty.ts` (`spawnPty`, expect-like, uses `Bun.spawn({terminal})`, the child gets a controlling terminal so `/dev/tty` works). Without a terminal: `run()` from `test/helpers/env.ts` (wraps in `setsid -w`, so `/dev/tty` can't be opened). Driving a passh binary's prompts: `test/helpers/passh.ts` (`initVault`, `withPassphrase`); they work for the reference and ours.
-- scrypt 2^18 costs ~0.6 s natively (`node:crypto.scryptSync`, fine); `node:crypto` in Bun has **no** chacha20-poly1305: use `@noble/ciphers`. X25519: `@noble/curves` (or node:crypto). Installed: `@noble/{curves,ciphers,hashes,post-quantum}`, `smol-toml`.
+- scrypt 2^18 costs ~0.6 s natively (`node:crypto.scryptSync`, fine); `node:crypto` in Bun has **no** chacha20-poly1305: use `@noble/ciphers`. X25519: `@noble/curves` (or node:crypto). Installed: `@noble/{curves,ciphers,hashes,post-quantum}`, `zxcvbn`.
 - Native OS calls: `bun:ffi` `dlopen("libc.so.6")` (Linux) / `libc.dylib` (macOS) — works inside `bun build --compile` binaries. Real fds from `node:fs` `openSync` are OS fds.
 
 ## Layout and ownership

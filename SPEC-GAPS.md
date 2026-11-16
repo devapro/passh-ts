@@ -8,6 +8,16 @@ reference binary and reproduced; "Decided:" means nothing told us and we chose.
 Audit items (`spec/docs/reviews/2026-11-16-spec-audit.md`, `#n`) note whether passh-ts keeps the
 current behaviour or implements the proposed fix.
 
+## The most important findings
+
+- **Library texts are de facto part of the contract.** Many texts are declared "not normative" (Go's `encoding/json` errors #24, `time.ParseDuration` and `strconv.ParseBool` in flag errors, `encoding/csv` errors, `os/exec` lookup errors #45, `net/http` responses #58, the agent child's `flag` package #73, `context deadline exceeded` #81, `filepath.EvalSymlinks` #15), yet they reach stderr and stdout, and a byte-for-byte comparison with the reference trips on every one. passh-ts emulates Go's texts; a spec meant for re-implementation should either pin these texts or exclude them from conformance tests explicitly.
+- **Order of checks is under-specified.** Which of several errors wins (data JSON members #23, terminal vs config vs vault-exists #117–#118, #128, unlock's three requests #78, record type vs version #105, `tag` validation #122) could only be learned by probing the reference.
+- **Contradictions between documents:** vault-format §5.3 vs import-export §1.6 (second username line, #29); cli.md §2.8 vs agent-session §A6 (editor lookup vs tmpfs order, #42); tui.md §8.3 vs storage.md §3.3 (reload after a `passwd` elsewhere, #107); storage.md §2.5 vs the reference (`init` with a config lacking `vault`, #124); cli.md §1.2 "every command first checks the vault exists" vs export/print (#128); print.md §5 line widths (#48).
+- **Byte-identical QR codes** require reproducing skip2/go-qrcode's segment mixing and its non-standard mask penalty (#54) — the spec only says "smallest version".
+- **Unicode 15.0.0 is pinned**, but JS engines ship other (newer, mixed) tables; passh-ts generates its own 15.0 tables for categories, case folding, White_Space and widths (#31). JS strings can't represent invalid UTF-8 or non-UTF-8 file names faithfully (#30).
+- **English texts without plural forms** (`%d bits`, `(%d replacing …)`) can't be translated correctly into ru/sr (#116); i18n.md §6's whole-text rule can't translate agent refusals that carry a value (#111).
+- **A reference bug** found by black-box testing: `passh recover` panics on a 65535-byte line (#47).
+
 ## Vault file, keys, crypto (vault-format.md)
 
 1. **§2.2 steps 4 and 6, warnings about ignored text.** The spec writes `ignored N line(s) of text…`; the reference prints proper plurals (`1 line`, `2 lines`). Reference reproduced (and the text is a plural message for translations).
