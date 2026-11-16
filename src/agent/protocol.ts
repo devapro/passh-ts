@@ -222,8 +222,10 @@ export function parseAnswer(line: Uint8Array): ParsedAnswer {
     const text = (d.values.get("error") as string | undefined) ?? "";
     if (code === "expired") return { kind: "expired" };
     if (code === "key_block_changed") return { kind: "key_block_changed" };
-    if (code === "version") throw agentError("%s", text);
-    throw agentError("the agent refused the request: %s", text);
+    // The refusal text crossed a process boundary as English; as an Error argument it is
+    // rendered by i18n.md §6 rule 2 (a whole-text catalogue key) in the user's language.
+    if (code === "version") throw agentError("%v", new Error(text));
+    throw agentError("the agent refused the request: %v", new Error(text));
   }
   const answer: Answer = {
     pid: (d.values.get("pid") as bigint | undefined) ?? 0n,

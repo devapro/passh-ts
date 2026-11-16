@@ -71,8 +71,8 @@ export const SR_CORE: Catalog = {
   "not a valid vault key": "nije ispravan ključ trezora",
   "agent: malformed answer": "agent: neispravan odgovor",
   "agent: the running agent speaks protocol version %d, this passh 1; kill it and run `passh unlock` again": "agent: pokrenuti agent govori verziju protokola %d, ovaj passh 1; zaustavite ga (kill) i ponovo pokrenite `passh unlock`",
-  "agent: %s": "agent: %s",
-  "agent: the agent refused the request: %s": "agent: agent je odbio zahtev: %s",
+  "agent: %v": "agent: %v",
+  "agent: the agent refused the request: %v": "agent: agent je odbio zahtev: %v",
   "agent: the agent's answer holds no vault key": "agent: odgovor agenta ne sadrži ključ trezora",
   "agent: the agent's answer holds no valid vault key: %s": "agent: odgovor agenta ne sadrži ispravan ključ trezora: %s",
 

@@ -72,8 +72,8 @@ export const RU_CORE: Catalog = {
   "not a valid vault key": "недействительный ключ хранилища",
   "agent: malformed answer": "агент: некорректный ответ",
   "agent: the running agent speaks protocol version %d, this passh 1; kill it and run `passh unlock` again": "агент: запущенный агент использует протокол версии %d, а этот passh — версии 1; завершите его и снова выполните `passh unlock`",
-  "agent: %s": "агент: %s",
-  "agent: the agent refused the request: %s": "агент: агент отклонил запрос: %s",
+  "agent: %v": "агент: %v",
+  "agent: the agent refused the request: %v": "агент: агент отклонил запрос: %v",
   "agent: the agent's answer holds no vault key": "агент: в ответе агента нет ключа хранилища",
   "agent: the agent's answer holds no valid vault key: %s": "агент: в ответе агента нет действительного ключа хранилища: %s",
 
