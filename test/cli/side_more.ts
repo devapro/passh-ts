@@ -1,6 +1,6 @@
 // Side-by-side runs for the *_more suites (unlock, lock, verify, backup, backups, import pass,
 // export, print, recovery-key print, doctor): the reference (reference/passh-go, a black box)
-// and ours through src/cli/testdata/main_more.ts (RUNS_MORE merged), each in its own isolated
+// and ours through src/main.ts, each in its own isolated
 // env (test/helpers/env.ts) holding a byte-identical copy of the same vault. Every spawn gets
 // the isolated env only, never process.env.
 
@@ -14,7 +14,7 @@ import { makePair, normalize, type Pair } from "./vaults.ts";
 export type Side = "ref" | "ours";
 
 export const REF_MORE = [REF_BIN];
-export const OURS_MORE = [process.execPath, "run", join(ROOT, "src/cli/testdata/main_more.ts")];
+export const OURS_MORE = [process.execPath, "run", join(ROOT, "src/main.ts")];
 
 /** A step of a PTY dialogue: wait for `expect`, then send `send` (+ Enter unless "raw"). */
 export type Step = [string | RegExp, string] | [string | RegExp, string, "raw"] | ((p: PtyProcess, e: IsolatedEnv) => Promise<void>);
@@ -64,7 +64,9 @@ export const VOLATILE: Array<[RegExp, string]> = [
 
 function envFor(e: IsolatedEnv, o: MoreRunOptions): Record<string, string> {
   const extra = typeof o.env === "function" ? o.env(e) : (o.env ?? {});
-  const env: Record<string, string> = { ...e.env, ...extra };
+  // Bun's own transpiler cache stays in the env too, also when a test unsets $HOME or makes it
+  // relative (Bun would otherwise use the real home, or a folder relative to the cwd).
+  const env: Record<string, string> = { ...e.env, BUN_RUNTIME_TRANSPILER_CACHE_PATH: join(e.dir, "bun-cache"), ...extra };
   for (const k of o.unset ?? []) delete env[k];
   return env;
 }

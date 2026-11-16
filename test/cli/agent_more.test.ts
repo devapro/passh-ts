@@ -6,7 +6,8 @@
 // started here is stopped (lock, then a kill of anything left under the test folders).
 
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { bothMore, killAgentsUnder, makePair, PASS, PASSPHRASE_STEP, runMore, visible, type MoreRunOptions, type Pair } from "./side_more.ts";
 import { buildVault, placeVault, type BuiltVault } from "./vaults.ts";
 
@@ -157,6 +158,22 @@ describe("unlock and lock", () => {
     for (const e of [p.ref, p.ours]) rmSync(e.vault);
     await same(p, ["lock"]);
     for (const e of [p.ref, p.ours]) placeVault(e.vault, vault.bytes);
+    await same(p, ["lock"]);
+  });
+});
+
+describe("unlock: the rollback question of the full open", () => {
+  test("an older copy: no stops, yes starts the agent", async () => {
+    const p = await newPair();
+    for (const e of [p.ref, p.ours]) {
+      mkdirSync(join(e.stateHome, "passh"), { recursive: true, mode: 0o700 });
+      const vaults = { [vault.data.vaultId]: { revision: 9, saved_at: "2026-10-01T08:00:00Z", seen_at: "2026-10-01T08:00:05Z" } };
+      writeFileSync(join(e.stateHome, "passh", "revisions.json"), JSON.stringify({ version: 1, vaults }, null, 2) + "\n");
+    }
+    const no = await same(p, ["unlock"], { pty: true, steps: [PASSPHRASE_STEP, ["[y/N] ", "n"]] });
+    expect(no.ref.stderr).toContain("stopped: this copy is older than one seen before on this machine");
+    const yes = await same(p, ["unlock"], { pty: true, steps: [PASSPHRASE_STEP, ["[y/N] ", "y"]] });
+    expect(yes.ref.code).toBe(0);
     await same(p, ["lock"]);
   });
 });

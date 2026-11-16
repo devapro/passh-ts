@@ -6,6 +6,7 @@
 
 import { accessSync, constants as C, lstatSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { totalmem } from "node:os";
+import { dlopen, FFIType, ptr, read } from "bun:ffi";
 import { basename, dirname } from "node:path";
 import { agentDoctorInfo } from "../agent/index.ts";
 import { chooseClipboard, NoClipboardError, type ClipboardMethod } from "../clipboard/index.ts";
@@ -352,21 +353,18 @@ function checkSwap(): Finding {
  */
 function darwinSwapUsage(): { used: bigint; encrypted: boolean } | Error {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const ffi = require("bun:ffi") as typeof import("bun:ffi");
-    const lib = ffi.dlopen("/usr/lib/libSystem.B.dylib", {
-      sysctlbyname: { args: [ffi.FFIType.ptr, ffi.FFIType.ptr, ffi.FFIType.ptr, ffi.FFIType.ptr, ffi.FFIType.u64], returns: ffi.FFIType.i32 },
-      __error: { args: [], returns: ffi.FFIType.ptr },
+    const lib = dlopen("/usr/lib/libSystem.B.dylib", {
+      sysctlbyname: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.i32 },
+      __error: { args: [], returns: FFIType.ptr },
     });
     try {
       const name = Buffer.from("vm.swapusage\0", "latin1");
       const buf = new Uint8Array(32);
       const len = new BigUint64Array([32n]);
-      const r = lib.symbols.sysctlbyname(ffi.ptr(name), ffi.ptr(buf), ffi.ptr(len), null, 0n);
+      const r = lib.symbols.sysctlbyname(ptr(name), ptr(buf), ptr(len), null, 0n);
       if (r !== 0) {
         const p = lib.symbols.__error();
-        const n = p ? ffi.read.i32(p, 0) : 0;
-        return toErrno(n);
+        return toErrno(p ? read.i32(p, 0) : 0);
       }
       const dv = new DataView(buf.buffer);
       return { used: dv.getBigUint64(16, true), encrypted: dv.getInt32(28, true) !== 0 };

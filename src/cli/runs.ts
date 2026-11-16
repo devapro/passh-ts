@@ -13,6 +13,7 @@ import { runEdit } from "./cmd_edit.ts";
 import { runPasswd, runRecover, runRekey } from "./cmd_keys.ts";
 import { runInit } from "./cmd_init.ts";
 import { runTuiCommand } from "./cmd_tui.ts";
+import { RUNS_MORE } from "./runs_more.ts";
 
 const notYet = (name: string): CommandSpec["run"] => () => {
   throw errorf("%s is not implemented yet", name);
@@ -35,8 +36,9 @@ export const RUNS: Partial<Record<string, CommandSpec["run"]>> = {
   version: () => writeStdout(`passh ${VERSION_STRING}\n`),
 };
 
+// unlock, lock, verify, backup, backups, import pass, export, print, recovery-key print, doctor.
 for (const k of ["backup", "backups", "doctor", "export", "import pass", "lock", "print", "recovery-key print", "unlock", "verify"]) {
-  RUNS[k] = notYet(k);
+  RUNS[k] = RUNS_MORE[k] ?? notYet(k);
 }
 
 // The entry and key commands (cli.md §2.2–§2.13, §2.16, §2.18).
