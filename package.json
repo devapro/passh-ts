@@ -1,0 +1,27 @@
+{
+  "name": "passh-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "passh, a single-binary password manager (TypeScript/Bun clean-room implementation of the passh spec)",
+  "scripts": {
+    "passh": "bun run src/main.ts",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "bun test src test/cli",
+    "test:unit": "bun test src",
+    "interop": "bun test test/interop",
+    "build": "bun run scripts/build.ts",
+    "build:host": "bun build --compile --minify --sourcemap=none src/main.ts --outfile dist/passh"
+  },
+  "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@noble/post-quantum": "^0.7.1",
+    "smol-toml": "^1.9.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^7.0.2"
+  }
+}
