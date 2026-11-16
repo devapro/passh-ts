@@ -47,6 +47,10 @@ export class SilentExit extends Error {
 /** The exit status an error ends the command with. */
 export function exitCodeOf(e: unknown): number {
   if (e instanceof SilentExit) return e.exitCode;
+  // A signal keeps its 128 + n through wrapping (errorf("…: %w", signalError)).
+  for (let cur: unknown = e, depth = 0; cur instanceof Error && depth < 50; cur = cur.cause, depth++) {
+    if (cur instanceof SignalError) return cur.exitCode;
+  }
   if (e instanceof PasshError) return e.exitCode;
   return 1;
 }
