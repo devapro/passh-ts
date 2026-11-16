@@ -82,3 +82,17 @@ current behaviour or implements the proposed fix.
 58. **HTTP answers before the §6.6 table** (non-normative, but observable): Go's net/http texts reproduced (`400 Bad Request: missing required Host header`, an `HTTP/1.0` status line for 1.0 requests, `OPTIONS *` → 200, Go's 2048-byte chunking). passh-ts has its own small HTTP/1.1 layer to match these.
 59. **Spec §14 Q4 (`allow_from`).** Current behaviour: a non-empty `allow_from` replaces the default ranges; any CIDR accepted, `0.0.0.0/0` included. **Audit #21, #22, #23**: current behaviour kept.
 60. **cli.md §2.17, no terminal.** The text isn't given for `recovery-key print` specifically; the generic `passh <cmd> needs a terminal (over SSH: use \`ssh -t\`)` is used.
+
+## TUI and the built-in form (tui.md)
+
+61. **Audits #1, #17, #18, #19 (TUI).** Proposed fixes implemented: the idle lock counts the larger of monotonic and wall-clock time (#1); "Reloaded: your input is back…" in the normal style (#17); search ties ordered by path segments (#18); Ctrl-C while typing a search closes it like Esc instead of quitting (#19). **#30** (TUI passphrase input differs from the CLI prompt): current behaviour kept.
+62. **tui.md §3.2/§7.2–§7.5, cancelling a prompt.** No message (as the reference); the form's cancel shows "Cancelled.".
+63. **tui.md §10.2, "one message" on the lock screen.** Joined with spaces (reference), in the error style if any part failed; "Clearing the clipboard failed: …." keeps its period there but not in the copy status of §7.1, following the spec's text in each place.
+64. **Texts the spec doesn't give** (decided): "Paste refused: the text isn't valid UTF-8." (lock screen, prompts, search), inline "paste refused: the text isn't valid UTF-8" (form), "Busy: wait for the print page to start.", "<path>: not found" under a kept prompt whose entry was deleted on disk, "Type the passphrase, then Enter." when the agent hint was shown but the agent has gone.
+65. **Unspecified key handling.** With the detail open, keys that are neither global nor detail keys are ignored.
+66. **tui.md §9, rollback "no" at unlock.** It closes the session without stopping the agent (not a lock); Ctrl-C there counts as quitting, which is a lock (stop_agent applies).
+67. **tui.md §6.2.** The whole entry view is stacked when any label is wider than 8 cells (decided). §3.3 help: the reference's key list (no PgUp/PgDn/Home/End lines), notes wrapped at 44 cells. §11.1/§11.6: the form's status line takes a row only when it has text; opening a form clears the TUI status (reference). §7.9: the copy note appears only after `c`; Esc leaves "Print page: <outcome>.". Ctrl-R hiding the password clears the form message.
+68. **tui.md §11.7 vs cli.md §1.4, a signal in the standalone form (`passh edit`).** cli.md says a signal at any other moment ends passh by its default action; the form restores the terminal first and passh then exits 128+n.
+69. **Not in the spec, reference behaviour reproduced:** the TUI enables the kitty keyboard protocol and xterm modifyOtherKeys (to tell Ctrl-Backspace from Esc) and disables them at exit.
+70. **Copy countdown replaced by another message:** the later "Clipboard cleared." is not shown; a failed clear always is (decided).
+71. **Display widths are per code point** (print.md §3.2 rule), not per grapheme cluster: a ZWJ emoji sequence can shift borders in some terminals — same as the reference.
