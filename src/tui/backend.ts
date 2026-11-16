@@ -61,7 +61,11 @@ export type UnlockResult =
 export interface RollbackQuestion {
   /** The warning text without the "Warning: " prefix ("this copy is older than …"). */
   warning: string;
-  /** Yes: record the lower revision (forced update). Resolves with warnings (e.g. the record wasn't updated). */
+  /**
+   * Yes: record the lower revision (forced update) and finish the open; the session is
+   * usable afterwards. Resolves with warnings (e.g. the record wasn't updated); throws if
+   * the open fails after all (the TUI shows the error on the lock screen).
+   */
   accept(): Promise<string[]>;
   /** The error a "no" ends the TUI with: "stopped: this copy is older …; nothing was changed". */
   readonly declined: Error;

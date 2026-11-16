@@ -77,7 +77,7 @@ export type Msg =
   | { type: "signal"; sig: SignalName }
   | { type: "start" }
   | { type: "unlock-result"; job: number; source: "agent" | "passphrase"; result: UnlockResult }
-  | { type: "rollback-accepted"; job: number; warnings: string[] }
+  | { type: "rollback-accepted"; job: number; warnings: string[]; error?: unknown }
   | { type: "save-result"; job: number; result: SaveResult }
   | { type: "check-result"; job: number; changed?: boolean; error?: unknown }
   | { type: "reload-result"; job: number; result: ReloadResult }
@@ -315,7 +315,7 @@ export class App {
       case "unlock-result":
         return this.onUnlock(msg.job, msg.source, msg.result);
       case "rollback-accepted":
-        return this.onRollbackAccepted(msg.job, msg.warnings);
+        return this.onRollbackAccepted(msg.job, msg.warnings, msg.error);
       case "save-result":
         return this.afterMain(this.onSave(msg.job, msg.result));
       case "check-result":
@@ -420,13 +420,11 @@ export class App {
           L.busy = T("unlocking… (this takes a few seconds on small devices)");
           return [
             async () => {
-              let warnings: string[] = [];
               try {
-                warnings = await rb.question.accept();
+                return { type: "rollback-accepted", job: j.id, warnings: await rb.question.accept() };
               } catch (e) {
-                warnings = [renderError(e)];
+                return { type: "rollback-accepted", job: j.id, warnings: [], error: e };
               }
-              return { type: "rollback-accepted", job: j.id, warnings };
             },
           ];
         }
@@ -539,12 +537,20 @@ export class App {
     }
   }
 
-  private onRollbackAccepted(job: number, warnings: string[]): Cmd[] {
+  private onRollbackAccepted(job: number, warnings: string[], error: unknown): Cmd[] {
     if (!this.unlockJob || job !== this.unlockJob.id) return [];
     this.unlockJob = null;
     const rb = this.lock.rollback;
     if (!rb) return [];
     this.lock.rollback = null;
+    if (error !== undefined) {
+      // SPEC-GAP: the open failed after "yes" (e.g. the file went away): its error, and the
+      // passphrase field again.
+      rb.session.close();
+      this.lock.mode = "field";
+      this.lock.messages = [{ text: renderError(error), style: "error" }];
+      return [];
+    }
     return this.enterMain(rb.session, [...rb.warnings, ...warnings]);
   }
 

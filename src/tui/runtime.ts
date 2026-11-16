@@ -200,10 +200,8 @@ export async function runLoop<M>(prog: Program<M>, term: Terminal, opts: LoopOpt
 
 import { Tty, openTty } from "../tty/tty.ts";
 
-/** The terminal over /dev/tty (src/tty), or null when there is none. */
-export function openTerminal(): (Terminal & { tty: Tty; close(): void }) | null {
-  const tty = openTty();
-  if (!tty) return null;
+/** The terminal over an open /dev/tty (src/tty); `close` closes the Tty too. */
+export function terminalFromTty(tty: Tty): Terminal & { tty: Tty; close(): void } {
   const reader = tty.reader();
   return {
     tty,
@@ -218,4 +216,10 @@ export function openTerminal(): (Terminal & { tty: Tty; close(): void }) | null 
       tty.close();
     },
   };
+}
+
+/** The terminal over /dev/tty (src/tty), or null when there is none. */
+export function openTerminal(): (Terminal & { tty: Tty; close(): void }) | null {
+  const tty = openTty();
+  return tty ? terminalFromTty(tty) : null;
 }

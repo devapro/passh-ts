@@ -27,6 +27,7 @@ import { MIN_H, MIN_W, render } from "./view.ts";
 export type { TuiBackend, TuiConfig, VaultSession, UnlockResult, SaveResult, ReloadResult, CopyResult, PrintPage, PrintRequest, PrintState, RollbackQuestion, EntryValues } from "./backend.ts";
 export type { Clock } from "./app.ts";
 export type { Terminal } from "./runtime.ts";
+export { terminalFromTty } from "./runtime.ts";
 
 export interface RunTuiOptions {
   /** The terminal (default: /dev/tty through src/tty). */

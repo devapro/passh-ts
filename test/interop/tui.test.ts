@@ -11,8 +11,8 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { copyFileSync, existsSync, writeFileSync } from "node:fs";
-import { isolatedEnv, REF_BIN, ROOT, run, type IsolatedEnv } from "../helpers/env.ts";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { isolatedEnv, REF_BIN, ROOT, run, writeConfig, type IsolatedEnv } from "../helpers/env.ts";
 import { initVault, PASS, withPassphrase } from "../helpers/passh.ts";
 import { spawnPty, type PtyProcess } from "../helpers/pty.ts";
 import { Screen } from "../../src/tui/testdata/vt.ts";
@@ -100,8 +100,15 @@ class Side {
   }
 }
 
-/** Both TUIs, unlocked, at one size. `idle`: session.idle_ttl as a Go duration and in ms. */
-async function both(cols: number, rows: number, idle?: [string, number]): Promise<[Side, Side]> {
+/** Our TUI with the real backend: `bun run src/main.ts` once the root command is registered, else the driver. */
+function realTuiCmd(): string[] {
+  const runs = readFileSync(join(ROOT, "src/cli/runs.ts"), "utf8");
+  if (runs.includes("runTuiCommand")) return [process.execPath, "run", join(ROOT, "src/main.ts")];
+  return [process.execPath, "run", join(ROOT, "src/tui/testdata/run-real.ts")];
+}
+
+/** Both TUIs, unlocked, at one size. `idle`: session.idle_ttl as a Go duration and in ms. `ours`: our TUI's command and env (default: the fake backend). */
+async function both(cols: number, rows: number, idle?: [string, number], ours?: { cmd: string[]; env: Record<string, string> }): Promise<[Side, Side]> {
   restore();
   const refArgs: string[] = [];
   const ourArgs: string[] = [];
@@ -113,7 +120,9 @@ async function both(cols: number, rows: number, idle?: [string, number]): Promis
   }
   const a = new Side(spawnPty([REF_BIN, ...refArgs], env.env, { cols, rows }), cols, rows);
   const b = new Side(
-    spawnPty([process.execPath, "run", DRIVER, "--data", dataFile, "--passphrase", PASS, "--vault-display", env.vault, "--clear-after", "30000", ...ourArgs], env.env, { cols, rows }),
+    ours
+      ? spawnPty(ours.cmd, ours.env, { cols, rows })
+      : spawnPty([process.execPath, "run", DRIVER, "--data", dataFile, "--passphrase", PASS, "--vault-display", env.vault, "--clear-after", "30000", ...ourArgs], env.env, { cols, rows }),
     cols,
     rows,
   );
@@ -295,6 +304,52 @@ describe("TUI side by side with the reference", () => {
       expect(diff(a.lines(), b.lines())).toEqual([]);
     } finally {
       await quit([a, b]);
+    }
+  }, 120_000);
+});
+
+describe("the real backend: both TUIs on copies of one vault file", () => {
+  test("identical screens after unlock; a change made by our TUI opens in passh-go", async () => {
+    // Our side: another isolated env with a copy of the same file (its own state folder).
+    const ours = isolatedEnv("tuirb");
+    try {
+      await writeConfig(ours);
+      mkdirSync(join(ours.dataHome, "passh"), { recursive: true, mode: 0o700 });
+      copyFileSync(join(env.dir, "vault.snap"), ours.vault);
+      const [a, b] = await both(80, 24, undefined, { cmd: realTuiCmd(), env: ours.env });
+      try {
+        for (const [keys, what] of [
+          ["", "after unlock"],
+          ["j\0j\0j\0j\0\r\0j", "a folder opened, an entry in the pane"],
+          ["\r", "the detail"],
+          ["\x1b\0\t\0 ", "Tags view, a tag selected"],
+          ["\t\0/\0hub", "search"],
+          ["\x1b\0G\0d", "delete question"],
+          ["n", "not deleted"],
+        ] as const) {
+          if (keys) await press([a, b], keys);
+          expect({ what, diff: diff(a.lines(), b.lines()) }).toEqual({ what, diff: [] });
+        }
+        // Our TUI changes the vault: tags of work/jira.
+        a.p.kill("SIGKILL");
+        await press([b], "/\0jira\0\r\0t");
+        await b.see("Tags (comma-separated): dev");
+        await press([b], ", from-ts\r");
+        await b.see("Tags of work/jira saved.");
+        b.p.send("q");
+        expect((await b.p.wait(20_000)).code).toBe(0);
+      } finally {
+        await quit([a, b]);
+      }
+      // passh-go opens the file our TUI saved
+      const r = await withPassphrase([REF_BIN], ["show", "work/jira"], ours);
+      expect(r.code).toBe(0);
+      expect(r.stdout).toContain("tags: dev, from-ts\n");
+      const v = await withPassphrase([REF_BIN], ["verify", "--full"], ours);
+      expect(v.code).toBe(0);
+    } finally {
+      await run([REF_BIN, "lock"], ours.env);
+      ours.cleanup();
     }
   }, 120_000);
 });
