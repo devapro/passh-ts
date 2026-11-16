@@ -21,6 +21,8 @@ export interface FlagDef {
   hidden?: boolean;
   /** Persistent: also valid on every subcommand (the global flags). */
   persistent?: boolean;
+  /** An argument for `usage` as a format (e.g. "help for %s" with the command name). */
+  usageArg?: string;
 }
 
 export interface ParsedFlags {
@@ -90,8 +92,8 @@ export class Command {
   /** Local flags plus help (and version on the root). */
   localFlags(): FlagDef[] {
     const fl = [...this.flags];
-    fl.push({ name: "help", short: "h", type: "bool", usage: `help for ${this.name}` });
-    if (!this.parent) fl.push({ name: "version", short: "v", type: "bool", usage: "version for passh" });
+    fl.push({ name: "help", short: "h", type: "bool", usage: "help for %s", usageArg: this.name });
+    if (!this.parent) fl.push({ name: "version", short: "v", type: "bool", usage: "version for %s", usageArg: "passh" });
     return fl;
   }
 
@@ -397,7 +399,7 @@ function flagUsages(flags: FlagDef[]): string {
     let line = f.short ? `  -${f.short}, --${f.name}` : `      --${f.name}`;
     const varname = f.type === "bool" ? "" : f.type;
     if (varname) line += " " + varname;
-    let usage = T(f.usage);
+    let usage = f.usageArg !== undefined ? T(f.usage, f.usageArg) : T(f.usage);
     if (f.def !== undefined && f.def !== "") usage += f.type === "string" ? T(" (default %s)", goQuote(f.def)) : T(" (default %s)", f.def);
     if (cpLen(line) + 1 > maxlen) maxlen = cpLen(line) + 1;
     lines.push([line, usage]);
