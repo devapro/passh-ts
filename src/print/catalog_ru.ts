@@ -117,7 +117,7 @@ export const PRINT_CATALOG_RU: Catalog = {
     many: "%d записей записано (текстовый лист) в %s; распечатайте его, затем удалите файл",
   },
   "the print page needs a terminal (over SSH: use `ssh -t`)": "странице печати нужен терминал (через SSH: используйте `ssh -t`)",
-  "passh %s needs a terminal (over SSH: use `ssh -t`)": "passh %s нужен терминал (через SSH: используйте `ssh -t`)",
+  "passh %s needs a terminal (over SSH: use `ssh -t`)": "для passh %s нужен терминал (через SSH: используйте `ssh -t`)",
   "Wrote the paper recovery key to %s.": "Бумажный ключ восстановления записан в %s.",
   "print it, keep the sheet offline, then delete the file: rm %s": "распечатайте его, храните лист вне сети, затем удалите файл: rm %s",
   "%s already exists; passh doesn't overwrite files": "%s уже существует; passh не перезаписывает файлы",

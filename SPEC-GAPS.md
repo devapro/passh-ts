@@ -144,3 +144,12 @@ current behaviour or implements the proposed fix.
 108. **tui.md §4.4, "bad key block".** A key block that doesn't hold exactly one vault key shows "Wrong passphrase, or the key block is damaged. Try again."; a container error of block 2 falls in the "any other error" row (decided).
 109. **TUI agent stop at a lock.** Uses `passh lock`'s stop-and-wait (≤ 5 s) inside the TUI's 5 s bound for clear + stop; an unresolvable vault path counts as "no agent" (audit #2).
 110. **TUI, late results.** An unanswered rollback question is answered "no" when the session closes; an open or reload that finishes after a lock is closed at once; an open failing after "yes" shows the error on the lock screen. Vault-layer warnings become "Warning: …" status lines. No `passh show` hint when copying a print page URL without a clipboard. Entries are acted on by id (`entry <id>: not found` if gone). (All decided.)
+
+## Languages (i18n.md, docs/translations.md)
+
+111. **i18n.md §6 rule 2 vs agent refusals with a variable part.** `the agent speaks protocol version 1, not %d` and `unknown request %q` cross the process boundary as plain text and can never match a whole-text catalogue key, so they stay English in ru/sr; only the fixed wire texts translate. The spec's mechanism can't cover them.
+112. **Doctor's level and check names.** cli.md §2.25 / i18n.md §3 make them translated, but the glossary only gives `ok` and `warn`. Decided: ru «инфо / пропуск / ошибка», sr "info / preskočeno / greška"; check names translated (`swap` kept).
+113. **Help headings that never print.** i18n.md §3 lists `Aliases:`, `Examples:`, `Additional Commands:`, `Additional help topics:`, `(DEPRECATED: %s)`; passh's commands never produce them, so no keys exist.
+114. **Go-library-style texts produced by passh-ts itself** (`EOF`, `dial unix …`, `write /dev/stdout: …`) are treated as "text from a library" and stay English, as the reference's do.
+115. **Config problems** are English-only (shown in English anyway when the config fails to load, §2/§6); other config-area texts are translated in case they appear after a config loaded.
+116. **Counts without an English plural** (`%d bits`, `%d-character password`, `(%d replacing entries …)`): the spec's English texts have no plural form, so ru/sr can't agree with the number; neutral wordings used. The spec should make these plural messages.
