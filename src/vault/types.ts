@@ -4,7 +4,7 @@
 
 import type { X25519Identity } from "../age/index.ts";
 import type { VaultData } from "../model/types.ts";
-import type { Config } from "../config/index.ts";
+import type { Config, Env } from "../config/index.ts";
 import type { CommandIO } from "../util/io.ts";
 
 /** Where a vault key came from (vault-format.md §3.3 maps decryption failures by it). */
@@ -22,6 +22,11 @@ export interface KeyRequest {
   keyBlockDigest: string;
   /** Cancels a wait (TUI). */
   signal?: AbortSignal;
+  /**
+   * The environment of this open (OpenOptions.env, else process.env): for `<state>` and the
+   * `~/` form of paths in the source's messages (added by the storage agent).
+   */
+  env?: Env;
 }
 
 /**
@@ -59,6 +64,11 @@ export interface OpenOptions {
   /** Warnings (ignored lines, rollback without a terminal, record problems) go here. */
   io: CommandIO;
   signal?: AbortSignal;
+  /**
+   * The environment for `<state>`, `$PWD` and `~` (added by the storage agent; default
+   * process.env). Tests pass an isolated one.
+   */
+  env?: Env;
 }
 
 /** The comparison with the rollback record (storage.md §6.2 `rollback` line). */

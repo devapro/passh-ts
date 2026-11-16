@@ -125,3 +125,18 @@ current behaviour or implements the proposed fix.
 92. **§2.1 export, from the reference:** `--format ""` = no `--format`; `--folder ""` = no filter; a folder holding nothing exports 0 entries without error; `--tag "a,,b"` fails `invalid tag: a tag can't be empty`; the `-o` open error reads `open <abs>: …`. Decided: an lstat error other than "exists" lets the command continue; a folder whose file system can't be checked counts as not tmpfs (the warning prints); the partial-file message uses the `~/` form.
 93. **§2.5 CSV quoting** is the spec's own rule, not Go's encoding/csv (so `\.`, a leading U+00A0 or U+2028 stay unquoted, a trailing space is quoted). Reference reproduced — worth stating explicitly.
 94. **Audit #4, #6, #7, #8, #39.** Proposed fixes are the default in passh-ts (empty `--age` refused; no duplicate `exported_at`; an unchanged `--overwrite` import saves nothing; the `too large` reason for > 4 MiB entries; empty `otp` values skipped when choosing the TOTP — then the next `otp`-keyed field wins over an `otpauth://` value); a `quirks` switch reproduces v0.6 for the interop tests. **#15, #40** (CSV-split `--tag`): current behaviour (the CLI's *strings* flags). **§14 Q3** (symlinks inside the store): current behaviour (a).
+
+## Opening, saving, backups, rollback record (storage.md §3–§7)
+
+95. **§3.1, when `<state>` is computed.** Not said. Reference: first, so `$HOME is not set` comes before anything else. Reproduced.
+96. **§3.1, which path is read.** Not said. Reference: the real path (its OS errors name it). Reproduced.
+97. **§4.2 steps 2 and 6, a vault that became a folder or grew over 64 MiB.** Not covered; treated as "changed", like a missing file (decided).
+98. **§4.2 step 5, read-back failures.** `<detail>` texts not given; own texts (e.g. `the bytes read differ from those written`).
+99. **§4.2 step 7, a failed close of the temporary file** (said to be a warning): text not given; `the new vault file couldn't be closed: …` (decided).
+100. **§4.2, a cancelled save** (TUI): no text. Decided: `the save was cancelled; nothing was saved` (code `cancelled`).
+101. **§5.3, several removal failures in one rotation.** One warning, the errors joined by `; ` (decided).
+102. **§5.1.** Seq-0 development-build names are ignored (allowed by the spec); symlinked folders under `backups/` are ignored (decided).
+103. **§4.6, folder errors at init.** Reference: `creating the vault's folder: …`; a failed final rename: `creating the vault file: …` (own text).
+104. **vault-format §3.6 / cli.md §2.18, order in `recover`.** Reference asks for the paper key before parsing the file, so the damaged-key-block warning comes after the key is typed. Reproduced.
+105. **§7.2, a record that has both type errors and `version` > 1.** Reference: any type error → "damaged" first, then the version check. Reproduced.
+106. **Audit #3, #32, #33**: proposed fixes (refuse saves over 64 MiB and read back with the limit; refuse to save at the largest revision; an offset hour of 24 makes the record damaged at read time). **#12, #13, #29, #34, #35**: current behaviour kept. **§14 Q1**: option (a) kept — `verify --full` and backup files raise the record.
