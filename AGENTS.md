@@ -29,7 +29,8 @@ src/util/duration.ts   Go ParseDuration / Duration.String, short <D> form       
 src/model/types.ts     Entry, Field, Tombstone, VaultData, Time, Unknowns           (data agent; shape fixed)
 src/age/ src/keys/ src/vaultfile/                                                    crypto agent
 src/model/ src/entrytext/ src/paths/ src/sanitize/ src/gen/ src/fuzzy/ src/util/unicode.ts   data agent
-src/ffi/ src/harden/ src/tty/ src/exec/ src/clipboard/ src/editor/ src/config/ src/fsx/       platform agent
+src/ffi/libc.ts src/fsx/ src/config/ src/harden/                                    fs/config agent
+src/ffi/termios.ts src/tty/ src/exec/ src/clipboard/ src/editor/                     terminal/process agent
 src/vault/             open, save, backups, verify, rollback record                 storage agent (phase 2)
 src/agent/             agent server (__agent), client, unlock/lock core             agent agent (phase 2)
 src/importpass/ src/export/                                                          import/export agent (phase 2)

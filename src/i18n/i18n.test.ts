@@ -47,9 +47,9 @@ describe("catalogues and plurals", () => {
   });
   test("plural categories (i18n.md §4 table)", () => {
     const ns = [0, 1, 2, 4, 5, 11, 12, 14, 21, 22, 25, 101, 111];
-    const want = ["many", "one", "few", "few", "many", "many", "many", "many", "one", "few", "many", "one", "many"];
-    expect(ns.map((n) => pluralCategory(n, "ru"))).toEqual(want);
-    expect(ns.map((n) => pluralCategory(n, "sr"))).toEqual(want);
+    const want: string[] = ["many", "one", "few", "few", "many", "many", "many", "many", "one", "few", "many", "one", "many"];
+    expect(ns.map((n): string => pluralCategory(n, "ru"))).toEqual(want);
+    expect(ns.map((n): string => pluralCategory(n, "sr"))).toEqual(want);
     expect(pluralCategory(1, "en")).toBe("one");
     expect(pluralCategory(-1, "en")).toBe("one");
     expect(pluralCategory(0, "en")).toBe("other");

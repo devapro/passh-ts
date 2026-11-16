@@ -1,0 +1,51 @@
+# SPEC-GAPS — where the passh spec forced a guess, or was wrong or contradictory
+
+Collected while building passh-ts from `spec/` alone (clean room), and checked against the
+reference binary run as a black box (`reference/passh-go`, 0.1.0-ref). Each item: the section,
+the issue, and what passh-ts does. "Reference:" means the behaviour was observed on the
+reference binary and reproduced; "Decided:" means nothing told us and we chose.
+
+Audit items (`spec/docs/reviews/2026-11-16-spec-audit.md`, `#n`) note whether passh-ts keeps the
+current behaviour or implements the proposed fix.
+
+## Vault file, keys, crypto (vault-format.md)
+
+1. **§2.2 steps 4 and 6, warnings about ignored text.** The spec writes `ignored N line(s) of text…`; the reference prints proper plurals (`1 line`, `2 lines`). Reference reproduced (and the text is a plural message for translations).
+2. **§2.2 step 3, container version too large for an int.** The spec says it "counts as newer" but not what number the message shows. Reference: `made by a newer passh; upgrade passh (container version 9223372036854775807)` (the int64 maximum). Reproduced.
+3. **§2.2, warnings on a failed parse.** Not said whether the "ignored lines" warnings are printed when the parse then fails. Reference (`verify`): none. The parser returns them with the error and the caller decides.
+4. **§3.6 "Damaged key block", unusable last block.** Not said what happens when the last armored block can't be used either. Reference: no END line, bad base64 or an empty block → the block-1 error without the warning; otherwise the warning, and any decryption failure of that block (header, wrong key, payload) is reported as the block-1 error. Reproduced.
+5. **§3.2 step 2, work factor above 2^63−1.** Marked non-normative (platform integer); passh-ts behaves as a 64-bit build (falls to step 3).
+6. **§3.2 step 4, "plaintext longer than 4096 bytes".** Read as a size-limited read: decryption fails as soon as an authenticated chunk takes it past 4096 bytes. Not observable on the reference.
+7. **§2.5 / audit #3, saves over 64 MiB.** Proposed fix implemented; the spec gives no text, so: `the vault file would be N bytes, larger than 64 MiB, which passh can't open; nothing was saved`.
+8. **§3.5 passphrase strength reasons.** Non-normative, but for compatibility: the reference words the reasons for the `us_tv_and_film` and Wikipedia lists as "a word by itself…" / "common words are easy to guess", unlike zxcvbn's own feedback; matched. `it is empty or too short` couldn't be triggered on the reference (mapped to an empty match list). passh-ts uses the original `zxcvbn` 4.4.2 (the reference uses the Go port trustelem/zxcvbn); on 36 probed passphrases score and reason matched.
+9. **storage §3.2 step 2 "a data block whose age header this key unwraps (header only)".** Taken literally: the stanza unwrap is tried, the header MAC is not verified.
+10. **i18n of container errors.** The spec gives whole English sentences; for translation they are composed as `file is damaged (block %d): %s` / `file is truncated: %s` with each reason a separate catalogue key.
+
+## Files, config, OS (storage.md, agent-session.md §A2.1–A2.2, §A8)
+
+11. **storage §1.4, busy lock without a specific text.** The spec has texts only for the vault lock. Decided: `another passh process has held <path> for 15s` for the generic case; callers use the spec's text where there is one.
+12. **storage §1.4, `fchmod` on lock files.** The tolerated errnos are listed only for temporary files. Decided: the same tolerance (EPERM, EINVAL, ENOTSUP, EOPNOTSUPP) for lock files; others fail as `chmod <p>: …`.
+13. **storage §1.4, cleaning leftovers, a flock error other than "busy".** Unspecified. Decided: fail with `locking <file>: …` and keep the file.
+14. **storage §1.4, cancelled lock wait.** The text after `stopped waiting for another passh process: ` is unspecified. Decided: Go's `context canceled` (or the cancelling reason).
+15. **storage §0, errors of the real-path computation.** No texts given. Decided: Go's `filepath.EvalSymlinks` texts (`lstat <p>: …`, a bare `not a directory`, `EvalSymlinks: too many links` after 255 links).
+16. **storage §2.2, TOML decoder strictness.** The spec requires TOML 1.1.0 and calls the decoder's messages non-normative. passh-ts has its own strict TOML 1.1 parser (smol-toml loses key order and line numbers, both needed for the unknown-key list). Strict TOML refuses a few invalid documents that BurntSushi/toml v1.6 accepts (reopening a dotted-key table with a header; extending an inline table with `[x.b]`).
+17. **storage §2.2, several type errors.** The reference reports one of them at random (Go map order); passh-ts the first in file order.
+18. **storage §2.2 step 3, which unknown keys are listed.** "Only the table" for an unknown table is underspecified. Reference: an unknown key is not listed when an earlier listed unknown key is a proper prefix of it, but `[aaa.b]` then `[aaa]` lists both and `[[zzz]]` twice lists `zzz` twice; dotted keys list the full dotted path, an inline table only the table; names are quoted with BurntSushi's `Key.String` and then `%q`. Reproduced.
+19. **storage §2.1 / cli.md §1.2, texts the spec doesn't give.** Reference reproduced: `--vault: $HOME is not set`, `--config: …`, `$PASSH_CONFIG: …`, the problem line `vault: $HOME …`, `config: read <p>: is a directory`; only ENOENT counts as a missing config file (a dangling symlink is missing; EACCES and ENOTDIR are errors even with `--vault`); an empty `$HOME` counts as unset.
+20. **agent-session §A2.1, no computable state folder.** With `$HOME` unset and no absolute `$XDG_STATE_HOME` the spec is silent. Decided: the error `$HOME is not set`.
+21. **storage §1.3 mkdirs, existing components.** Checked with `stat`, so a symlink to a folder counts as a folder (the spec says "existing folders are never changed or checked").
+22. **Audit #9** (`renameNoReplace` fallback, failed unlink after a successful link): fix implemented (warning, the rename counts as done). **#11** (config folder/file modes reduced by the umask): current behaviour kept, as storage.md §1.2 says. **#24** (`PR_SET_DUMPABLE`): not set, as §A8 says nothing else changes. **#25** (`$TMPDIR` re-read for the socket fallback): current behaviour kept.
+
+## Data, text form, paths, escaping (vault-format.md §4–§6, agent-session.md §A9.1, cli.md fuzzy)
+
+23. **vault-format §4.2–§4.4, order of checks and the texts of decoding errors.** The spec gives the messages but not the order in which they are found, nor the prefixes of type errors. Reference (probed with crafted data blocks), reproduced: known members are read in a fixed order regardless of input order (top: format, version, vault_id, revision, saved_at, entries, deleted; entry: id, path, password, username, url, tags, fields, notes, created_at, updated_at); type errors carry the member path but no position (`entries: path: invalid path: …`, `entries: tags: json: cannot unmarshal number into .1 of type string`); every entry's content checks come before `missing vault_id`, which comes before missing/duplicate ids and paths, which come before tombstones; tag errors read `entry N: invalid tag …` (no `invalid entry:`); a bad field value reads `field pin must be a single line` (key unquoted); vault_id missing or of a wrong type → `missing or bad vault_id`, `null` or `""` → `missing vault_id`; a null or missing path → `missing path`, `""` → `entries: path: invalid path: it is empty`.
+24. **vault-format §3.3 "the parser's own text".** Declared non-normative, but scripts and tests see it; passh-ts reproduces Go's encoding/json texts (`json: cannot unmarshal array into Go value of type map[string]jsontext.Value`, `invalid character '\x01' in string`, ``invalid escape sequence `\q` in string``, `… in numeric literal`, `exceeded max depth`, invalid bytes shown as `'\xff'`). A re-implementation in another language has to emulate Go's JSON library to match — the spec should either fix these texts or say plainly that tests must not compare them.
+25. **Audit #31 (§4.6, invalid UTF-8 inside unknown values).** Proposed fix implemented: one U+FFFD per invalid byte; the reference copies the bytes.
+26. **Audit #32 / §4.7 (revision 2^64−1).** Proposed fix implemented: the save is refused (`revision-max`, own text); the reference wraps to 0.
+27. **Audit #36 (`mv` of a folder onto a destination the same move frees).** Current behaviour reproduced (`mv m/b m` fails with `m/b/x: already exists`).
+28. **Audits #18, #37, #38 (search ranking, NFC of the query).** Current behaviour reproduced (TUI ties by plain byte order, query not normalized); the fixed variant exists behind an option.
+29. **vault-format §5.3 vs import-export §1.6 — contradiction.** §5.3 says "a second username line among them becomes a custom field"; import-export §1.6's table says a second `username` goes to the notes while a second `user`/`login` becomes a field. passh-ts follows §1.6 (the more specific table). A metadata line moved to the notes loses the trailing CR it lost when tested as metadata.
+30. **Lone surrogates.** JS strings can hold lone surrogates that UTF-8 can't; S4 escapes their WTF-8 bytes (U+D800 → `\xed\xa0\x80`) and validation reports `<name> is not valid UTF-8`. (A Go implementation never meets this case.)
+31. **print.md §3.2 display width.** Widths are defined only for text after S4 escaping; control characters count 1. Unassigned code points take the EastAsianWidth.txt defaults (W in the CJK blocks and planes 2–3). The spec pins Unicode 15.0.0; JS engines ship newer, mixed tables (Bun: NFC from ICU at Unicode 17, regexp property tables of another version), so passh-ts generates its own 15.0.0 tables for categories, case folding, White_Space and width, and relies on the engine only for NFC (stable for code points assigned in 15.0).
+32. **Checks only reachable for data built in memory** (a path not in NFC, an unnormalized tag, editing a missing id): own texts.
+33. **Small decisions.** `parseTagList` de-duplicates; the data operations NFC-normalize paths themselves (matters for U+212A KELVIN SIGN, which NFC maps to `K` — found by interop); time errors Go-quote the value (`saved_at: bad time "a\tb"`), as the reference does.
